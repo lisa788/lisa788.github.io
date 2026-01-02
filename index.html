@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starfleet Security Access</title>
+    <style>
+        /* --- CORE STYLES --- */
+        body {
+            background-color: #000;
+            font-family: 'Arial Narrow', sans-serif; /* Closest web-safe font to LCARS */
+            color: #FF9900; /* LCARS Orange */
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden; /* Prevent scrolling during animations */
+        }
+
+        /* --- LCARS LAYOUT --- */
+        .lcars-sidebar {
+            width: 150px;
+            background-color: #CC6699; /* LCARS Purple */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            padding-top: 20px;
+            border-top-right-radius: 50px; /* The elbow curve */
+            margin-right: 20px;
+            transition: background-color 0.5s; /* Smooth transition for Red Alert */
+        }
+
+        .lcars-text {
+            color: black;
+            font-weight: bold;
+            font-size: 20px;
+            padding-right: 10px;
+            text-transform: uppercase;
+        }
+
+        .main-display {
+            flex-grow: 1;
+            padding: 20px;
+            border-top: 10px solid #CC6699;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .terminal-input {
+            background: transparent;
+            border: 1px solid #FF9900;
+            color: #FF9900;
+            font-family: monospace;
+            width: 80%;
+            padding: 10px;
+            margin-top: 20px;
+            font-size: 1.2em;
+            outline: none;
+        }
+
+        /* --- MODAL (MISSION BRIEFING) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background-color: #000;
+            border: 2px solid #CC6699;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            color: #FF9900;
+            font-family: 'Arial', sans-serif;
+            box-shadow: 0 0 20px #CC6699;
+        }
+
+        .lcars-header {
+            color: #CC6699;
+            border-bottom: 2px solid #FF9900;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        .hint {
+            color: #999;
+            font-style: italic;
+            font-size: 0.9em;
+            margin-top: 15px;
+        }
+
+        .lcars-btn {
+            background-color: #FF9900;
+            color: black;
+            border: none;
+            padding: 10px 20px;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            text-transform: uppercase;
+        }
+
+        .lcars-btn:hover {
+            background-color: #FFCC66;
+        }
+
+        /* --- RED ALERT ANIMATION --- */
+        @keyframes red-alert-pulse {
+            0% { background-color: #000; }
+            50% { background-color: #330000; }
+            100% { background-color: #000; }
+        }
+
+        .alert-mode {
+            animation-name: red-alert-pulse;
+            animation-duration: 1s;
+            animation-iteration-count: infinite;
+            color: #FF3333 !important;
+        }
+
+        /* Change sidebar color during alert */
+        .alert-mode .lcars-sidebar, 
+        .alert-mode .main-display {
+            background-color: #990000;
+            border-color: #990000;
+        }
+        
+        .alert-mode .terminal-input {
+            color: #FF3333;
+            border-color: #FF3333;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="mission-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="lcars-header">INCOMING TRANSMISSION</h2>
+            <p><strong>MISSION:</strong> RETAKE CONTROL</p>
+            <p>The ship's internal sensors have been locked out. We suspect a legacy vulnerability in the command line interface.</p>
+            <p><strong>OBJECTIVE:</strong> Perform a Cross-Site Scripting (XSS) attack to trigger an alert.</p>
+            <p class="hint">HINT: Try injecting a &lt;script&gt; tag.</p>
+            <button id="start-btn" class="lcars-btn">ACKNOWLEDGE</button>
+        </div>
+    </div>
+
+    <div class="lcars-sidebar">
+        <span class="lcars-text">Sec-Opps</span>
+        <span class="lcars-text" style="margin-top:auto; padding-bottom: 20px;">LCARS 42</span>
+    </div>
+
+    <div class="main-display">
+        <h1>USS ENTERPRISE // SECURITY OVERRIDE</h1>
+        <p>SYSTEM LOCKED. ENTER AUTHORIZATION CODE.</p>
+        <div id="game-output" style="margin-top: 20px; font-size: 1.1em;">Waiting for input...</div>
+        
+        <input type="text" class="terminal-input" id="command-line" placeholder="Enter command..." autocomplete="off">
+    </div>
+
+    <script>
+        // --- SELECT ELEMENTS ---
+        const inputField = document.getElementById('command-line');
+        const outputDisplay = document.getElementById('game-output');
+        const modal = document.getElementById('mission-modal');
+        const startBtn = document.getElementById('start-btn');
+        const bodyElement = document.body;
+
+        // --- MODAL LOGIC ---
+        startBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+            inputField.focus();
+        });
+
+        // --- GAME LOOP ---
+        inputField.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                const userInput = inputField.value;
+                processCommand(userInput);
+                inputField.value = ''; // Clear input
+            }
+        });
+
+        // --- HACKING LOGIC ---
+        function processCommand(input) {
+            const sanitizedInput = input.toLowerCase();
+
+            // Check for the XSS payload
+            if (sanitizedInput.includes('<script>')) {
+                // SUCCESS
+                outputDisplay.innerHTML = "⚠️ WARNING: SECURITY BREACH. ROOT ACCESS GRANTED.";
+                
+                // Trigger Red Alert
+                bodyElement.classList.add('alert-mode');
+                
+                // Optional: Console log for debugging
+                console.log("Hack successful!"); 
+            } 
+            else {
+                // FAILURE
+                outputDisplay.innerHTML = `> Processing: "${input}"... ACCESS DENIED.`;
+                outputDisplay.style.color = "#FF9900";
+                
+                // Reset alert if they fail a subsequent attempt
+                bodyElement.classList.remove('alert-mode');
+            }
+        }
+    </script>
+</body>
+</html>
